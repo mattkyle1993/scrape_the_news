@@ -53,7 +53,6 @@ def run_vpn_and_chromedriver(chromedriver=False):
                 pass
         else:
             print(f"...{program_name[ct]} running!")
-
 def get_selenium_driver():
     """
     returns webdriver so selenium can be implemented more easily
