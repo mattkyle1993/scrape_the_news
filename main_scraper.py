@@ -68,83 +68,128 @@ def get_selenium_driver():
 
 class GrabArticlesAndArticleContent():
     def __init__(self):
-        self.driver = ""
-        self.xpath = ""
-        self.layer = ""
-        self.class_name = ""
-        self.descendant_tag = ""
-        self.class_txt = ""
+        # inputs
+        self.layers = []
+        self.descendant_tags = []
+        self.class_txts = []
         self.main_url = ""
-        self.if_article_condition = ""
+        self.if_article_conditions = []
+        # outputs
         self.reject_urls = []
-        self.articles = []
-        self.return_list = []
         self.articles_urls = []
         self.para_list = []
-
-    def feed_info(self,driver,xpath,main_url,if_states,xpath_input_dict={}): #layer,class_name,descendant_tag,class_txt
-
-        """     xpath_input_dict = {
-                    descendant_tag:["article_tag","para_tag"],
-                    class_name:["article_class","para_class"],
-                    class_txt:["article_txt","para_txt"],
-                    layer:["article_layer","para_layer"]
-                }
-        """
-        self.driver = driver
-        self.xpath = xpath
-        self.layer = layer
-        self.class_name = class_name
-        self.descendant_tag = descendant_tag
-        self.class_txt = class_txt
-        self.main_url = main_url
-        self.if_states = if_states
+        # internals
         self.grab_articles = True
+        self.if_state_idx = 0
 
-    def find_elements_headlines(self):
-        driver = self.driver
-        xpath = self.xpath
-        layer = self.layer
-        class_name = self.class_name
-        descendant_tag = self.descendant_tag
-        class_txt = self.class_txt
+
+    def feed_info(self,xpath_input_dict):    
+
+        """     
+        takes the following dictionary as input:
+        xpath_input_dict** = {
+    
+                                descendant_tags:["article_tag","para_tag"],
+
+                                class_txts:["article_txt","para_txt"],
+
+                                layers:["article_layer","para_layer"],
+
+                                descendant_tags:["article_desc_tag","para_desc_tag"],
+
+                                main_url:"mainurl.com",
+                                
+                                if_states:['(if and if and if)','(if and if and if)'] # takes string form of if statements. leave second list as '' if you have no conditions for the paragraphs.
+                            
+                            }
+        """
+
+        # self.driver = xpath_input_dict['driver']
+        self.layers = xpath_input_dict['layers']
+        self.descendant_tags = xpath_input_dict['descendant_tags']
+        self.class_txts = xpath_input_dict['class_txts']
+        self.main_url = xpath_input_dict['main_url']
+        self.if_states = xpath_input_dict['if_states']
+
+        driver = get_selenium_driver()
+        layers = self.layers
+        descendant_tags = self.descendant_tags
+        class_txts = self.class_txts
         if_states = self.if_states
         main_url = self.main_url
+        url_list = []
         if self.grab_articles == False:
             self.para_list = []
-
-        if if_state_idx == 0:
-            url_list.append(self.main_url)
-        else:
             url_list = self.articles_urls
+        if self.grab_articles == True:
+            url_list.append(self.main_url)
         for the_url in url_list:
             if self.grab_articles == True:
                 get_att = 'href'
-                if_state_idx = 0
                 the_url = main_url
                 driver.get(the_url)
+                time.sleep(2)
             else:
                 get_att = 'p'
-                if_state_idx = 1
+                self.if_state_idx = 1
                 driver.get(the_url)
-            xpath = ".//descendant::{descendant_tag}[@{class_name}='{class_txt}']/{layer}".format(descendant_tag=descendant_tag,class_name=class_name,class_txt=class_txt,layer=layer)
+                time.sleep(2)
+            xpath = ".//descendant::{descendant_tag}[@class='{class_txt}']/{layer}".format(
+                descendant_tag=descendant_tags[self.if_state_idx],
+                class_txt=class_txts[self.if_state_idx],
+                layer=layers[self.if_state_idx])
             elements = driver.find_elements(By.XPATH,xpath)
             for element in elements:
-                item = element.get_attribute(get_att)
+                if get_att == "href":
+                    item = element.get_attribute(get_att)
+                if get_att == "p":
+                    item = element.text
                 info = []
                 paras = []
-                condition = if_states[if_state_idx]
-                if condition:
-                    if item not in info or item not in paras:
-                        if get_att == 'p':
-                            self.para_list.append(item.text)
-                        if get_att == 'href':
-                            self.articles_urls.append(info)
+                condition = if_states[self.if_state_idx]
+                if (condition == "x" and self.if_state_idx == 1):
+                    the_condition = "Good to go"
+                    condition = "(the_condition == 'Good to go')"
+                while_ct = 0
+                while while_ct < 1: 
+                    if eval(condition): # execute string form of if statement
+                        if item not in info or item not in paras:
+                            if get_att == 'p':
+                                self.para_list.append(item)
+                            if get_att == 'href':
+                                self.articles_urls.append(item)
+                    while_ct += 1
             if get_att == "p":
-                p_dict = {"art_url":item,"paras":paras}
+                p_dict = {"art_url":the_url,"paras":paras}
                 self.para_list.append(p_dict)
             self.grab_articles = False
-        if get_att == "p":
-            return self.para_list
-        if get_att == "href":
-            return self.articles_urls
+
+# XPATH_INPUT_DICT = {
+        #     'descendant_tags':["div","div"],
+        #     'class_txts':["headline","the-content"],
+        #     'layers':["a","p"],
+        #     'main_url':"news.com",
+        #     'if_states':["(if and if)",'x']
+        # }
+
+from scrape_info import XPATH_INPUT_DICT
+grab = GrabArticlesAndArticleContent()
+grab.feed_info(xpath_input_dict=XPATH_INPUT_DICT)
+grab.feed_info(xpath_input_dict=XPATH_INPUT_DICT)
+
+list_of_dicts = grab.para_list
+
+merged_dict = {}
+for d in list_of_dicts:
+    url = d["url"]
+    paragraphs = d["paragraphs"]
+    if url in merged_dict:
+        merged_dict[url].extend(paragraphs)
+    else:
+        merged_dict[url] = paragraphs
+
+ct_ = 0
+while ct_ < 10:
+    for url, paragraphs in merged_dict.items():
+        ct_ += 1
+        print(f"URL: {url}, Merged Paragraphs: {paragraphs}")
