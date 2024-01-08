@@ -13,6 +13,7 @@ from lxml import html
 import urllib.request, http.cookiejar
 import http
 import urllib
+import datetime
 
 WEBDRIVER_PATH = "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"
 
@@ -104,7 +105,6 @@ class GrabArticlesAndArticleContent():
                             }
         """
 
-        # self.driver = xpath_input_dict['driver']
         self.layers = xpath_input_dict['layers']
         self.descendant_tags = xpath_input_dict['descendant_tags']
         self.class_txts = xpath_input_dict['class_txts']
@@ -118,59 +118,91 @@ class GrabArticlesAndArticleContent():
         if_states = self.if_states
         main_url = self.main_url
         url_list = []
+        articles = []
         if self.grab_articles == False:
-            self.para_list = []
             url_list = self.articles_urls
         if self.grab_articles == True:
             url_list.append(self.main_url)
+        print("url_list",url_list)
+        url_list = url_list[0:15]
+        parag_art = []
         for the_url in url_list:
+            ctt = 0
             if self.grab_articles == True:
-                get_att = 'href'
-                the_url = main_url
-                driver.get(the_url)
-                time.sleep(2)
-            else:
+                while ctt < 8:
+                    try:
+                        if self.grab_articles == True:
+                            ctt += 1
+                            get_att = 'href'
+                            the_url = main_url
+                            driver.get(the_url)
+                            print("start:",datetime.datetime.now().time())
+                            print("checkpoint:",datetime.datetime.now().time())
+                            # time.sleep(2)
+                            xpath = ".//descendant::{descendant_tag}[@class='{class_txt}']/{layer}".format(
+                                descendant_tag=descendant_tags[self.if_state_idx],
+                                class_txt=class_txts[self.if_state_idx],
+                                layer=layers[self.if_state_idx])
+                            elements = driver.find_elements(By.XPATH,xpath)
+                            print("length of elements:",len(elements))
+                            print("checkpoint:",datetime.datetime.now().time())
+                            # time.sleep(2)
+                            len_ct = 0
+                            # while ctt < 8:
+                            for element in elements[0:15]:
+                            # for element in elements:
+                                len_ct += 1
+                                # ctt += 1
+                                print("elements left:",(len(elements)-len_ct))
+                                if get_att == "href":
+                                    print("checkpoint:",datetime.datetime.now().time())
+                                    item = element.get_attribute(get_att)
+                                    # time.sleep(2)
+                                condition = if_states[self.if_state_idx]
+                                print("checkpoint:",datetime.datetime.now().time())
+                                if eval(condition): # execute string form of if statement
+                                    print("checkpoint:",datetime.datetime.now().time())
+                                    if item not in url_list:
+                                        print(item)
+                                        articles.append(item)
+                    except Exception as error:
+                        print("error:",error)
+                        reject_dict = {"url":the_url,"error":error}
+                        self.reject_urls.append(reject_dict)
+                        ctt+=1
+            if self.grab_articles == False:
                 get_att = 'p'
                 self.if_state_idx = 1
-                driver.get(the_url)
-                time.sleep(2)
-            xpath = ".//descendant::{descendant_tag}[@class='{class_txt}']/{layer}".format(
-                descendant_tag=descendant_tags[self.if_state_idx],
-                class_txt=class_txts[self.if_state_idx],
-                layer=layers[self.if_state_idx])
-            elements = driver.find_elements(By.XPATH,xpath)
-            for element in elements:
-                if get_att == "href":
-                    item = element.get_attribute(get_att)
-                if get_att == "p":
-                    item = element.text
-                info = []
-                paras = []
-                condition = if_states[self.if_state_idx]
-                if (condition == "x" and self.if_state_idx == 1):
-                    the_condition = "Good to go"
-                    condition = "(the_condition == 'Good to go')"
-                while_ct = 0
-                while while_ct < 1: 
-                    if eval(condition): # execute string form of if statement
-                        if item not in info or item not in paras:
-                            if get_att == 'p':
-                                self.para_list.append(item)
-                            if get_att == 'href':
-                                self.articles_urls.append(item)
-                    while_ct += 1
+                headers = {
+                            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+                                'Accept-Encoding': 'none',
+                                'Accept-Language': 'en-US,en;q=0.8',
+                                'Connection': 'keep-alive'
+                            } 
+                request = urllib.request.Request(the_url,headers=headers)  
+                opener = urllib.request.build_opener()
+                time.sleep(10)
+                filtered_html = etree.HTML(opener.open(request).read())
+                text = filtered_html.xpath('//p')
+                parag_list = []
+                for t in text:
+                    if t not in parag_list:
+                        print("paragraph:: ",t.text)
+                        parag_list.append(t.text)
             if get_att == "p":
-                p_dict = {"art_url":the_url,"paras":paras}
-                self.para_list.append(p_dict)
+                p_dict = {"art_url":the_url,"paras":parag_list}
+                parag_art.append(p_dict)
+            if get_att == "href":
+                print("checkpoint:",datetime.datetime.now().time())
+                print("len of articles list:",len(articles))
+                self.articles_urls = articles
+                print("len of self.articles_urls:",len(self.articles_urls))
             self.grab_articles = False
-
-# XPATH_INPUT_DICT = {
-        #     'descendant_tags':["div","div"],
-        #     'class_txts':["headline","the-content"],
-        #     'layers':["a","p"],
-        #     'main_url':"news.com",
-        #     'if_states':["(if and if)",'x']
-        # }
+            self.para_list = parag_art
+            print("checkpoint:",datetime.datetime.now().time())
+            print("end:",datetime.datetime.now().time())
 
 from scrape_info import XPATH_INPUT_DICT
 grab = GrabArticlesAndArticleContent()
@@ -181,8 +213,8 @@ list_of_dicts = grab.para_list
 
 merged_dict = {}
 for d in list_of_dicts:
-    url = d["url"]
-    paragraphs = d["paragraphs"]
+    url = d["art_url"]
+    paragraphs = d["paras"]
     if url in merged_dict:
         merged_dict[url].extend(paragraphs)
     else:
