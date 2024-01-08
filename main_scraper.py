@@ -188,6 +188,7 @@ for d in list_of_dicts:
     else:
         merged_dict[url] = paragraphs
 
+
 ct_ = 0
 while ct_ < 10:
     for url, paragraphs in merged_dict.items():
