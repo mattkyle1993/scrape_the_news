@@ -86,6 +86,14 @@ class GrabArticlesAndArticleContent():
         self.grab_articles = True
         self.if_state_idx = 0
         self.additional_unwanted = []
+        self.headers = {
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+                        'Accept-Encoding': 'none',
+                        'Accept-Language': 'en-US,en;q=0.8',
+                        'Connection': 'keep-alive'
+                    } 
 
 
     def scroll_click_load_more(self,driver,xpath_input_dict):
@@ -103,16 +111,9 @@ class GrabArticlesAndArticleContent():
             ct+= 1
 
     def grab_menu_url_links(self,the_url):
-        headers = {
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-                        'Accept-Encoding': 'none',
-                        'Accept-Language': 'en-US,en;q=0.8',
-                        'Connection': 'keep-alive'
-                    } 
+
         REGEX = RegexThatURLOhYeah()
-        request = urllib.request.Request(the_url,headers=headers)  
+        request = urllib.request.Request(the_url,headers=self.headers)  
         opener = urllib.request.build_opener()
         time.sleep(2)
         filtered_html = etree.HTML(opener.open(request).read())
@@ -168,66 +169,49 @@ class GrabArticlesAndArticleContent():
         additional_unwanted = self.additional_unwanted
         url_list = []
         articles = []
-        if self.grab_articles == False:
-            url_list = self.articles_urls
-        if self.grab_articles == True:
-            url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
+        url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
         url_list = url_list[0:15]
         inner_href_links = []
         for the_url in url_list:
-            if self.grab_articles == True:
-                    try:
-                        if self.grab_articles == True:
-                            headers = {
-                                        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-                                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                            'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-                                            'Accept-Encoding': 'none',
-                                            'Accept-Language': 'en-US,en;q=0.8',
-                                            'Connection': 'keep-alive'
-                                        } 
-                            
-                            clipped_url = REGEX.extract_domain_name(the_url)
-                            request = urllib.request.Request(the_url,headers=headers)  
-                            opener = urllib.request.build_opener()
-                            time.sleep(2)
-                            filtered_html = etree.HTML(opener.open(request).read())
-                            texts = filtered_html.xpath('//body')
-                            
-                            
-                            inner_href_links = [] 
-                            for text in texts:
-                                href_link = text.xpath('.//a/@href')
-                                unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/"]
-                                unwanted = unwanted + additional_unwanted
-                                for h in href_link:
-                                    if((".com" in h)
-                                    and("www" in h)test
-                                    # and(h not in str for str in unwanted)
-                                    and(h.count("/") >=3)
-                                    and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
-                                    and(h != the_url)
-                                    and(clipped_url == REGEX.extract_domain_name(h))
-                                    # and(h in str for str in content_type)
-                                    and(h not in inner_href_links)
-                                    and(h not in url_list)):
-                                        print(h)
-                                        inner_href_links.append(h)
-                                    elif((".com" not in h)
-                                    and("www" not in h)
-                                    and(h.count("/") >=3)
-                                    and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
-                                    and(h != the_url)
-                                    # and(h in str for str in content_type)
-                                    and(h not in inner_href_links)
-                                    and(h not in url_list)):
-                                        print(h)
-                                        inner_href_links.append(h)
-
-                    except Exception as error:
-                        print("error:",error)
-                        reject_dict = {"url":the_url,"error":error}
-                        self.reject_urls.append(reject_dict)
+            try:
+                clipped_url = REGEX.extract_domain_name(the_url)
+                request = urllib.request.Request(the_url,headers=self.headers)  
+                opener = urllib.request.build_opener()
+                time.sleep(2)
+                filtered_html = etree.HTML(opener.open(request).read())
+                texts = filtered_html.xpath('//body')
+                inner_href_links = []
+                for text in texts:
+                    href_link = text.xpath('.//a/@href')
+                    unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/"]
+                    unwanted = unwanted + additional_unwanted
+                    for h in href_link:
+                        if((".com" in h)
+                        and("www" in h)
+                        # and(h not in str for str in unwanted)
+                        and(h.count("/") >=3)
+                        and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                        and(h != the_url)
+                        and(clipped_url == REGEX.extract_domain_name(h))
+                        # and(h in str for str in content_type)
+                        and(h not in inner_href_links)
+                        and(h not in url_list)):
+                            print(h)
+                            inner_href_links.append(h)
+                        elif((".com" not in h)
+                        and("www" not in h)
+                        and(h.count("/") >=3)
+                        and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                        and(h != the_url)
+                        # and(h in str for str in content_type)
+                        and(h not in inner_href_links)
+                        and(h not in url_list)):
+                            print(h)
+                            inner_href_links.append(h)
+            except Exception as error:
+                print("error:",error)
+                reject_dict = {"url":the_url,"error":error}
+                self.reject_urls.append(reject_dict)
         print("checkpoint:",datetime.datetime.now().time())
         print("len of articles list:",len(articles))
         self.articles_urls = inner_href_links
@@ -235,15 +219,7 @@ class GrabArticlesAndArticleContent():
         parag_art = []
         for inner in inner_href_links:
             self.if_state_idx = 1
-            headers = {
-                        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                            'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-                            'Accept-Encoding': 'none',
-                            'Accept-Language': 'en-US,en;q=0.8',
-                            'Connection': 'keep-alive'
-                        } 
-            request = urllib.request.Request(inner,headers=headers)  
+            request = urllib.request.Request(inner,headers=self.headers)  
             opener = urllib.request.build_opener()
             time.sleep(10)
             filtered_html = etree.HTML(opener.open(request).read())
@@ -252,9 +228,9 @@ class GrabArticlesAndArticleContent():
             for t in text:
                 if t not in parag_list:
                     print("paragraph:: ",t.text)
-                    # parag_list.append(t.text)
+                    parag_list.append(t.text)
                 p_dict = {"art_url":inner,"paras":parag_list}
-                # parag_art.append(p_dict)
+                parag_art.append(p_dict)
 
         self.para_list = parag_art
         print("checkpoint:",datetime.datetime.now().time())
@@ -284,7 +260,6 @@ class RegexThatURLOhYeah():
 from scrape_info import XPATH_INPUT_DICT
 grab = GrabArticlesAndArticleContent()
 grab.feed_mainpage_info(xpath_input_dict=XPATH_INPUT_DICT)
-# grab.feed_mainpage_info(xpath_input_dict=XPATH_INPUT_DICT)
 
 # list_of_dicts = grab.para_list
 
