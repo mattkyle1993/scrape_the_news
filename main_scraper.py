@@ -207,7 +207,7 @@ class GrabArticlesAndArticleContent():
                         and(h not in inner_href_links)
                         and(h not in url_list)):
                             print(h)
-                            inner_href_links.append(h)
+                            inner_href_links.append(h) 
             except Exception as error:
                 print("error:",error)
                 reject_dict = {"url":the_url,"error":error}
