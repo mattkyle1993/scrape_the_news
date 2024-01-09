@@ -193,15 +193,16 @@ class GrabArticlesAndArticleContent():
                             time.sleep(2)
                             filtered_html = etree.HTML(opener.open(request).read())
                             texts = filtered_html.xpath('//body')
-                            # ct=1
-                            inner_href_links = []
+                            
+                            
+                            inner_href_links = [] 
                             for text in texts:
                                 href_link = text.xpath('.//a/@href')
                                 unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/"]
                                 unwanted = unwanted + additional_unwanted
                                 for h in href_link:
                                     if((".com" in h)
-                                    and("www" in h)
+                                    and("www" in h)test
                                     # and(h not in str for str in unwanted)
                                     and(h.count("/") >=3)
                                     and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
