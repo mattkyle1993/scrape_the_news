@@ -15,6 +15,7 @@ import http
 import urllib
 import datetime
 import re
+import math
 
 WEBDRIVER_PATH = "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"
 
@@ -72,11 +73,7 @@ def get_selenium_driver(minimize=True):
 class GrabArticlesAndArticleContent():
     def __init__(self):
         # inputs
-        # self.layers = []
-        # self.descendant_tags = []
-        # self.class_txts = []
         self.main_url = ""
-        # self.if_article_conditions = []
         self.content_type =['politic','opinion','border']
         # outputs
         self.reject_urls = []
@@ -94,14 +91,21 @@ class GrabArticlesAndArticleContent():
                         'Accept-Language': 'en-US,en;q=0.8',
                         'Connection': 'keep-alive'
                     } 
-
+        REGEX = RegexThatURLOhYeah()
+        self.clipped_url = ""
 
     def scroll_click_load_more(self,driver,xpath_input_dict):
-        # driver = get_selenium_driver(minimize=False)
-        # try:
-        #     driver.get("NEWS.COM")
-        # except Exception as error:
-        #     print("errorR:: ",error)
+
+        """
+        scrolls page and clicks "load more". will modify this later so it can be agnostic to the website.
+        want to also add functionality to search if it's a load more button, a next page button, or neither.
+        """
+
+        driver = get_selenium_driver(minimize=False)
+        try:
+            driver.get("NEWS.COM")
+        except Exception as error:
+            print("errorR:: ",error)
 
         ct = 0
         while ct <= 5:
@@ -112,6 +116,10 @@ class GrabArticlesAndArticleContent():
 
     def grab_menu_url_links(self,the_url):
 
+        """
+        grab menu hrefs from header of html page, filter out unwanted urls
+        """
+
         REGEX = RegexThatURLOhYeah()
         request = urllib.request.Request(the_url,headers=self.headers)  
         opener = urllib.request.build_opener()
@@ -119,54 +127,33 @@ class GrabArticlesAndArticleContent():
         filtered_html = etree.HTML(opener.open(request).read())
         texts = filtered_html.xpath('//header')
         href_links=[]
-        # ct=1
+        clipped_url = REGEX.extract_domain_name(the_url)
         for text in texts:
             href_link = text.xpath('.//a/@href')
             signsin = ["sign-in","sign-up"]
             for h in href_link:
                 if((".com" in h)
-                    and("www" in h)
-                    and(h not in str for str in signsin)
-                    # and(h == h.startswith(the_url))
-                    and(h != the_url)
-                    and(self.clipped_url == REGEX.extract_domain_name(h))
-                    and(h in str for str in self.content_type)
-                    and(h not in href_links)):
-                    # if ct <= 3:
-                            # print(h)
-                            href_links.append(h)
+                and("www" in h)
+                and(h not in str for str in signsin)
+                and(h != the_url)
+                and(clipped_url == REGEX.extract_domain_name(h))
+                and(h in str for str in self.content_type)
+                and(h not in href_links)):
+                    href_links.append(h)
         return href_links
 
-    def feed_mainpage_info(self,xpath_input_dict):    
+    def feed_mainpage_info(self,main_url,additional_unwanted,reject_rate=0.35):    
 
         """     
-        takes the following dictionary as input:
-        xpath_input_dict** = {
-    
-                                descendant_tags:["article_tag","para_tag"],
-
-                                class_txts:["article_txt","para_txt"],
-
-                                layers:["article_layer","para_layer"],
-
-                                descendant_tags:["article_desc_tag","para_desc_tag"],
-
-                                main_url:"mainurl.com",
-                                
-                                if_states:['(if and if and if)','(if and if and if)'] # takes string form of if statements. leave second list as '' if you have no conditions for the paragraphs.
-                            
-                            }
+        main_url: takes main newsite url (ex: "https://www.cnn.com"), finds header, grabs different news sections, then grabs articles within those news sections, and then grabs the content within those articles.
+        additional_unwanted: takes unwanted str values that you don't want in the article URLs list
+        reject_rate: how many articles are rejected before the while loop for grabbing articles 'gives up'
         """
         REGEX = RegexThatURLOhYeah()
         GRAB = GrabArticlesAndArticleContent()
-        self.layers = xpath_input_dict['layers']
-        self.descendant_tags = xpath_input_dict['descendant_tags']
-        self.class_txts = xpath_input_dict['class_txts']
-        self.main_url = xpath_input_dict['main_url']
-        self.if_states = xpath_input_dict['if_states']
+        self.main_url = main_url
         self.clipped_url = REGEX.extract_domain_name(self.main_url)
 
-        additional_unwanted = self.additional_unwanted
         url_list = []
         articles = []
         url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
@@ -217,7 +204,8 @@ class GrabArticlesAndArticleContent():
         self.articles_urls = inner_href_links
         print("len of self.articles_urls:",len(self.articles_urls))    
         parag_art = []
-        for inner in inner_href_links:
+        for inner in inner_href_links[0:6]:
+            print("inner url:",inner)
             self.if_state_idx = 1
             request = urllib.request.Request(inner,headers=self.headers)  
             opener = urllib.request.build_opener()
@@ -227,14 +215,11 @@ class GrabArticlesAndArticleContent():
             parag_list = []
             for t in text:
                 if t not in parag_list:
-                    print("paragraph:: ",t.text)
                     parag_list.append(t.text)
                 p_dict = {"art_url":inner,"paras":parag_list}
                 parag_art.append(p_dict)
 
         self.para_list = parag_art
-        print("checkpoint:",datetime.datetime.now().time())
-        print("end:",datetime.datetime.now().time())
 
 class RegexThatURLOhYeah():
 
@@ -256,25 +241,24 @@ class RegexThatURLOhYeah():
         
         return(eval("(len(true_list)==0)"))
 
-
-from scrape_info import XPATH_INPUT_DICT
+from scrape_info import MAIN_URL #, XPATH_INPUT_DICT
 grab = GrabArticlesAndArticleContent()
-grab.feed_mainpage_info(xpath_input_dict=XPATH_INPUT_DICT)
+grab.feed_mainpage_info(main_url=MAIN_URL,additional_unwanted=["twitter","/topic/"])
 
-# list_of_dicts = grab.para_list
+list_of_dicts = grab.para_list
 
-# merged_dict = {}
-# for d in list_of_dicts:
-#     url = d["art_url"]
-#     paragraphs = d["paras"]
-#     if url in merged_dict:
-#         merged_dict[url].extend(paragraphs)
-#     else:
-#         merged_dict[url] = paragraphs
+merged_dict = {}
+for d in list_of_dicts:
+    url = d["art_url"]
+    paragraphs = d["paras"]
+    if url in merged_dict:
+        merged_dict[url].extend(paragraphs)
+    else:
+        merged_dict[url] = paragraphs
 
 
-# ct_ = 0
-# while ct_ < 10:
-#     for url, paragraphs in merged_dict.items():
-#         ct_ += 1
-#         print(f"URL: {url}, Merged Paragraphs: {paragraphs}")
+ct_ = 0
+while ct_ < 10:
+    for url, paragraphs in merged_dict.items():
+        ct_ += 1
+        print(f"URL: {url}, Merged Paragraphs: {paragraphs}")
