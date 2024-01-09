@@ -3,3 +3,9 @@ gaze_direction.py
 scrape_info.py
 shape_predictor_68_face_landmarks.dat
 /__pycache__/
+*.html
+testing.py
+sdfsd.py
+*.png
+*.jpg
+screen_cap_read.py
