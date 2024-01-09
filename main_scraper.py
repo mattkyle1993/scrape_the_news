@@ -154,53 +154,72 @@ class GrabArticlesAndArticleContent():
         self.main_url = main_url
         self.clipped_url = REGEX.extract_domain_name(self.main_url)
 
+        # additional_unwanted = self.additional_unwanted
         url_list = []
         articles = []
         url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
         url_list = url_list[0:15]
         inner_href_links = []
-        for the_url in url_list:
-            try:
-                clipped_url = REGEX.extract_domain_name(the_url)
-                request = urllib.request.Request(the_url,headers=self.headers)  
-                opener = urllib.request.build_opener()
-                time.sleep(2)
-                filtered_html = etree.HTML(opener.open(request).read())
-                texts = filtered_html.xpath('//body')
-                inner_href_links = []
-                for text in texts:
-                    href_link = text.xpath('.//a/@href')
-                    unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/"]
-                    unwanted = unwanted + additional_unwanted
-                    for h in href_link:
-                        if((".com" in h)
-                        and("www" in h)
-                        # and(h not in str for str in unwanted)
-                        and(h.count("/") >=3)
-                        and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
-                        and(h != the_url)
-                        and(clipped_url == REGEX.extract_domain_name(h))
-                        # and(h in str for str in content_type)
-                        and(h not in inner_href_links)
-                        and(h not in url_list)):
-                            print(h)
-                            inner_href_links.append(h)
-                        elif((".com" not in h)
-                        and("www" not in h)
-                        and(h.count("/") >=3)
-                        and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
-                        and(h != the_url)
-                        # and(h in str for str in content_type)
-                        and(h not in inner_href_links)
-                        and(h not in url_list)):
-                            print(h)
-                            inner_href_links.append(h) 
-            except Exception as error:
-                print("error:",error)
-                reject_dict = {"url":the_url,"error":error}
-                self.reject_urls.append(reject_dict)
-        print("checkpoint:",datetime.datetime.now().time())
-        print("len of articles list:",len(articles))
+        the_count = 0
+        reject_count = 0
+        threshold = len(url_list)*reject_rate
+        reject_threshold = math.ceil(threshold)
+        print("reject rate threshold:",reject_threshold)
+        while(reject_count <= reject_threshold):
+            while len(inner_href_links) <= 10:
+                for the_url in url_list:
+                    try:
+                        clipped_url = REGEX.extract_domain_name(the_url)
+                        request = urllib.request.Request(the_url,headers=self.headers)  
+                        opener = urllib.request.build_opener()
+                        time.sleep(3)
+                        filtered_html = etree.HTML(opener.open(request).read())
+                        texts = filtered_html.xpath('//body') # search body of page for article links
+                        for text in texts:
+                            href_link = text.xpath('.//a/@href')
+                            unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/"]
+                            unwanted = unwanted + additional_unwanted
+                            for h in href_link:
+                                # catching href links with https:// in them
+                                if(("https://" in h)
+                                and(h.count("/") >=3)
+                                and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                                and(h != the_url)
+                                and(clipped_url == REGEX.extract_domain_name(h))
+                                # and(h in str for str in content_type)
+                                and(h not in inner_href_links)
+                                and(h not in url_list)):
+                                    inner_href_links.append(h)
+                                # catching 'incomplete' links without https:// in them
+                                elif(("https://" not in h)
+                                and(h.count("/") >=3)
+                                and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                                and(h != the_url)
+                                # and(h in str for str in content_type)
+                                and(h not in inner_href_links)
+                                and(h not in url_list)):
+                                    full_url = the_url[:-1]+h
+                                    inner_href_links.append(full_url)
+                        the_count+=1
+                    except Exception as error:
+                        if "Error 429" in error:
+                            print("error 429: too many requests")
+                        reject_dict = {"url":the_url,"error":error}
+                        reject_count += 1
+                        self.reject_urls.append(reject_dict)
+                        # print("reject count:",reject_count)
+                        if reject_count > reject_threshold:
+                            print("Reject count ({reject_count}) greater than reject threshold ({reject_threshold})".format(reject_count=reject_count,reject_threshold=reject_threshold))
+                            break
+            if True:
+                reject_count = 99999
+        if True:
+            while len(inner_href_links) < reject_threshold:
+                print("fewer article links ({inner_href_links}) than the reject threshold of {reject_threshold}. stopping.".format(inner_href_links=len(inner_href_links),reject_threshold=reject_threshold))
+                return None
+            while len(inner_href_links) == 0:
+                print("zero articles grabbed. stopping.")
+                return None
         self.articles_urls = inner_href_links
         print("len of self.articles_urls:",len(self.articles_urls))    
         parag_art = []
@@ -215,6 +234,7 @@ class GrabArticlesAndArticleContent():
             parag_list = []
             for t in text:
                 if t not in parag_list:
+                    # print("paragraph:: ",t.text)
                     parag_list.append(t.text)
                 p_dict = {"art_url":inner,"paras":parag_list}
                 parag_art.append(p_dict)
