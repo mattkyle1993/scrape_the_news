@@ -166,7 +166,7 @@ class GrabArticlesAndArticleContent():
         reject_threshold = math.ceil(threshold)
         print("reject rate threshold:",reject_threshold)
         while(reject_count <= reject_threshold):
-            while len(inner_href_links) <= 10:
+            while len(inner_href_links) <= 10: 
                 for the_url in url_list:
                     try:
                         clipped_url = REGEX.extract_domain_name(the_url)
