@@ -358,9 +358,6 @@ class GrabArticlesAndArticleContent():
                         p_dict = {"art_url":"failed_to_scrape.com","paras":["I","have","failed","you","...","{ran_num}".format(ran_num=ran_num)],"headline":"Local Man Claims This Article Failed to be Scraped Today"}
             parag_art.append(p_dict)
         self.para_list = parag_art
-<<<<<<< Updated upstream
- 
-=======
     def create_searchable_content(self,):
         done = []
         parag_art = self.para_list
@@ -401,7 +398,6 @@ class GrabArticlesAndArticleContent():
         topics = keywordsearch["topics"]
         keywords = keywordsearch["keywords"]
 
->>>>>>> Stashed changes
 class RegexThatURLOhYeah():
 
     def extract_domain_name(self,url):
