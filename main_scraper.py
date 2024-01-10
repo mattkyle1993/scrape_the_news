@@ -327,7 +327,7 @@ class GrabArticlesAndArticleContent():
         parag_art = [] # grab paragraphs and headlines
         inner_done = []
         for inner in inner_href_links[0:6]:
-            
+             
             if True:
                     true = "true"
                     if true == true:
