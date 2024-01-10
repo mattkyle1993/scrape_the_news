@@ -240,7 +240,7 @@ class GrabArticlesAndArticleContent():
                 parag_art.append(p_dict)
 
         self.para_list = parag_art
-
+ 
 class RegexThatURLOhYeah():
 
     def extract_domain_name(self,url):
