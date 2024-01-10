@@ -185,7 +185,7 @@ class GrabArticlesAndArticleContent():
             paras = []
             for elem in elements:
                 para = elem.text
-                # print("paragraph:",para)
+                # print("paragraph:",para) 
                 paras.append(para)
             p_dict = {"art_url":url,"paras":paras,"headline":headline.strip()}
         if urllib == True:
