@@ -1,23 +1,48 @@
 from selenium import webdriver      
-from selenium.common.exceptions import NoSuchElementException
+# from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.keys import Keys
+# from selenium.webdriver.common.keys import Keys
 import time
 import psutil
 import os
 from lxml import etree
 from lxml import html
-import urllib.request, http.cookiejar
+import urllib.request
 import http
 import urllib
 import datetime
 import re
 import math
+from piapy import PiaVpn
+import random
+import json
 
 WEBDRIVER_PATH = "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"
+
+def change_vpn_location():
+    """
+    https://pypi.org/project/piapy/
+    """
+    locs = ['us-florida', 'us-atlanta', 'us-houston', 'us-washington-dc', 'us-east', 'us-chicago', 'us-new-york-city', 'us-texas', 'us-west','us-south-dakota']
+    vpn = PiaVpn()
+    current_region = vpn.region()
+    locs = locs.remove(current_region)
+    new_loc = random.choice(locs)
+    print("changing to VPN IP location to:",new_loc)
+    vpn.set_region(new_loc)
+    changed = False
+    while changed == False:
+        print("sleeping now while change occurs")
+        time.sleep(3)
+        updated_region = vpn.region()
+        if (updated_region != current_region):
+            print("sleep complete. location changed.")
+            changed = True
+            locs = locs + [current_region]
+            pass
 
 def run_vpn_and_chromedriver(chromedriver=False):
     
@@ -71,6 +96,7 @@ def get_selenium_driver(minimize=True):
     return driver
 
 class GrabArticlesAndArticleContent():
+    
     def __init__(self):
         # inputs
         self.main_url = ""
@@ -89,10 +115,11 @@ class GrabArticlesAndArticleContent():
                         'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
                         'Accept-Encoding': 'none',
                         'Accept-Language': 'en-US,en;q=0.8',
-                        'Connection': 'keep-alive'
+                        'Connection': 'keep-alive',
+                        'Referer': '{main_url}'.format(main_url=self.main_url)
                     } 
-        REGEX = RegexThatURLOhYeah()
         self.clipped_url = ""
+        self.headline_grabapproach = ""
 
     def scroll_click_load_more(self,driver,xpath_input_dict):
 
@@ -137,10 +164,72 @@ class GrabArticlesAndArticleContent():
                 and(h not in str for str in signsin)
                 and(h != the_url)
                 and(clipped_url == REGEX.extract_domain_name(h))
-                and(h in str for str in self.content_type)
-                and(h not in href_links)):
+                and(h not in href_links)): 
                     href_links.append(h)
         return href_links
+
+    def alternative_grab_paragraphs_headlines(self,url,selenium=False,urllib=True,request_sleep_time=2):
+        p_dict = {}
+        import urllib.request
+        if selenium == True:
+            urllib = False
+            driver = get_selenium_driver()
+            # print("checkpoint 1")
+            driver.get(url)
+            driver.implicitly_wait(request_sleep_time)
+            # print("checkpoint 2")
+            headline = driver.find_element(By.CSS_SELECTOR,"h1").text
+            # print("headline:",headline)
+            driver.implicitly_wait(request_sleep_time)
+            elements = driver.find_elements(By.CSS_SELECTOR,"p")
+            paras = []
+            for elem in elements:
+                para = elem.text
+                # print("paragraph:",para)
+                paras.append(para)
+            p_dict = {"art_url":url,"paras":paras,"headline":headline.strip()}
+        if urllib == True:
+            try:
+                print("inner url:",url)
+                self.if_state_idx = 1
+                request = urllib.request.Request(url,headers=self.headers) 
+                time.sleep(request_sleep_time)
+                opener = urllib.request.build_opener()
+                time.sleep(request_sleep_time)
+                filtered_html = etree.HTML(opener.open(request).read()) # 
+                time.sleep(2)
+                try:
+                    headline_element = filtered_html.xpath("//h1") 
+                except Exception as error:
+                    print("error::",error)
+                if headline_element:
+                    # print("true",headline_element)
+                    ct=0
+                    for hedlin_el in headline_element:
+                        if ct == 0:
+                            headline = hedlin_el.text
+                            # print("Headline:", headline_text.strip())
+                            ct+=1
+                        if ct == 1:
+                            pass
+                else:
+                    print("Headline not found.")
+                    headline = "headline_search_failed"
+                parag_list = []
+                text = filtered_html.xpath('//p')
+                for t in text:
+                    if t not in parag_list:
+                        # print("paragraph:: ",t.text)
+                        parag_list.append(t.text)
+                    p_dict = {"art_url":url,"paras":parag_list,"headline":headline.strip()}
+            except Exception as error:
+                if "[WinError 10060]" in str(error):
+                    change_vpn_location()
+                print("reject on:",(url,error))
+        return p_dict
+
+
+
 
     def feed_mainpage_info(self,main_url,additional_unwanted,reject_rate=0.35):    
 
@@ -154,11 +243,12 @@ class GrabArticlesAndArticleContent():
         self.main_url = main_url
         self.clipped_url = REGEX.extract_domain_name(self.main_url)
 
-        # additional_unwanted = self.additional_unwanted
         url_list = []
         articles = []
         url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
-        url_list = url_list[0:15]
+        ult_url_list = url_list
+        url_list = url_list[0:3]
+        print("url list:",url_list)
         inner_href_links = []
         the_count = 0
         reject_count = 0
@@ -166,7 +256,7 @@ class GrabArticlesAndArticleContent():
         reject_threshold = math.ceil(threshold)
         print("reject rate threshold:",reject_threshold)
         while(reject_count <= reject_threshold):
-            while len(inner_href_links) <= 10: 
+            # while len(inner_href_links) <= 10: 
                 for the_url in url_list:
                     try:
                         clipped_url = REGEX.extract_domain_name(the_url)
@@ -181,25 +271,37 @@ class GrabArticlesAndArticleContent():
                             unwanted = unwanted + additional_unwanted
                             for h in href_link:
                                 # catching href links with https:// in them
-                                if(("https://" in h)
+                                if(("https://" in h)   
                                 and(h.count("/") >=3)
                                 and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
                                 and(h != the_url)
                                 and(clipped_url == REGEX.extract_domain_name(h))
-                                # and(h in str for str in content_type)
                                 and(h not in inner_href_links)
-                                and(h not in url_list)):
-                                    inner_href_links.append(h)
+                                and(h not in ult_url_list)
+                                and(h not in url_list)): 
+                                    for content in self.content_type:
+                                        if content in h:
+                                            if h not in inner_href_links:
+                                                print("complete:",h)
+                                                inner_href_links.append(h)
                                 # catching 'incomplete' links without https:// in them
-                                elif(("https://" not in h)
-                                and(h.count("/") >=3)
-                                and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
-                                and(h != the_url)
-                                # and(h in str for str in content_type)
-                                and(h not in inner_href_links)
-                                and(h not in url_list)):
-                                    full_url = the_url[:-1]+h
-                                    inner_href_links.append(full_url)
+                                elif("https://" not in h):
+                                    if self.main_url[-1] == '/':
+                                        full_url = self.main_url[:-1]+h
+                                    if self.main_url[-1] != '/':
+                                        full_url = self.main_url + h
+                                    if((h.count("/") >=3)
+                                    and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                                    and(h != the_url)
+                                    and(h not in inner_href_links)
+                                    and(h not in ult_url_list)
+                                    and(full_url not in inner_href_links)
+                                    and(h not in url_list)): 
+                                        for content in self.content_type:
+                                            if content in h:
+                                                if h not in inner_href_links:
+                                                    inner_href_links.append(full_url)
+                                                    print("incomplete:",full_url)
                         the_count+=1
                     except Exception as error:
                         if "Error 429" in error:
@@ -211,8 +313,8 @@ class GrabArticlesAndArticleContent():
                         if reject_count > reject_threshold:
                             print("Reject count ({reject_count}) greater than reject threshold ({reject_threshold})".format(reject_count=reject_count,reject_threshold=reject_threshold))
                             break
-            if True:
-                reject_count = 99999
+                if True:
+                    reject_count = 99999
         if True:
             while len(inner_href_links) < reject_threshold:
                 print("fewer article links ({inner_href_links}) than the reject threshold of {reject_threshold}. stopping.".format(inner_href_links=len(inner_href_links),reject_threshold=reject_threshold))
@@ -222,25 +324,84 @@ class GrabArticlesAndArticleContent():
                 return None
         self.articles_urls = inner_href_links
         print("len of self.articles_urls:",len(self.articles_urls))    
-        parag_art = []
+        parag_art = [] # grab paragraphs and headlines
+        inner_done = []
         for inner in inner_href_links[0:6]:
-            print("inner url:",inner)
-            self.if_state_idx = 1
-            request = urllib.request.Request(inner,headers=self.headers)  
-            opener = urllib.request.build_opener()
-            time.sleep(10)
-            filtered_html = etree.HTML(opener.open(request).read())
-            text = filtered_html.xpath('//p')
-            parag_list = []
-            for t in text:
-                if t not in parag_list:
-                    # print("paragraph:: ",t.text)
-                    parag_list.append(t.text)
-                p_dict = {"art_url":inner,"paras":parag_list}
-                parag_art.append(p_dict)
-
+            
+            if True:
+                    true = "true"
+                    if true == true:
+                        if inner not in inner_done:
+                            p_dict = GRAB.alternative_grab_paragraphs_headlines(url=inner,selenium=True)# if urllib fails, try selenium
+                            # if p_dict:
+                            if p_dict not in parag_art:
+                                parag_art.append(p_dict)
+                            selenium_failed = False
+                            print("selenium success.")
+                            inner_done.append(inner)
+                    else:
+                        print("selenium failed. Moving on.")
+                        selenium_failed = True
+            if selenium_failed == True:
+                    true = "true"
+                    if true == true:
+                        if inner not in inner_done:
+                            p_dict = GRAB.alternative_grab_paragraphs_headlines(url=inner,urllib=False) # try urllib first 
+                            # if p_dict: 
+                            if p_dict not in parag_art:
+                                parag_art.append(p_dict)
+                            print("urllib success.")
+                            inner_done.append(inner)
+                    else:
+                        print("urllib and selenium both failed. Moving on.")
+                        ran_num = random.randint(1000,9999)
+                        p_dict = {"art_url":"failed_to_scrape.com","paras":["I","have","failed","you","...","{ran_num}".format(ran_num=ran_num)],"headline":"Local Man Claims This Article Failed to be Scraped Today"}
+            parag_art.append(p_dict)
         self.para_list = parag_art
+<<<<<<< Updated upstream
  
+=======
+    def create_searchable_content(self,):
+        done = []
+        parag_art = self.para_list
+        merged_dict = {}
+        dict_count = 0
+        REGEX = RegexThatURLOhYeah()
+        current_datetime = datetime.now()
+        custom_format = "%Y_%m_%d_%H_%M_%S"
+        formatted_datetime = current_datetime.strftime(custom_format)
+        clipped_url = REGEX.extract_domain_name(self.main_url)
+        current_datetime = datetime.now()
+        if dict_count == 0:
+            merged_dict[f"dict_id_{clipped_url}_00"] = {
+                        "main_url": self.main_url,
+                        "article_content_search": self.content_type,
+                        "scrape_date_time":formatted_datetime
+                    }
+        for d in parag_art:
+            if d not in done:
+                dict_count += 1
+                dict_ct = f"dict_id_{clipped_url}_0{dict_count}"
+                url = d["art_url"]
+                paragraphs = d["paras"]
+                headline = d['headline']
+                if dict_count > 0:
+                    merged_dict[dict_ct] = {
+                        "url": url,
+                        "headline": headline,
+                        "article_content": paragraphs
+                    }
+                done.append(d)
+
+        with open('test_result_{clipped_url}_{now}.json'.format(now=formatted_datetime,clipped_url=clipped_url), 'w') as fp:
+            json.dump(merged_dict, fp)
+
+    def search_through_content(self,**keywordsearch):
+
+        topics = keywordsearch["topics"]
+        keywords = keywordsearch["keywords"]
+
+>>>>>>> Stashed changes
 class RegexThatURLOhYeah():
 
     def extract_domain_name(self,url):
@@ -262,23 +423,10 @@ class RegexThatURLOhYeah():
         return(eval("(len(true_list)==0)"))
 
 from scrape_info import MAIN_URL #, XPATH_INPUT_DICT
+from datetime import datetime
+run_vpn_and_chromedriver() # make sure VPN is running
 grab = GrabArticlesAndArticleContent()
-grab.feed_mainpage_info(main_url=MAIN_URL,additional_unwanted=["twitter","/topic/"])
+grab.content_type = ['trump','border','migrants']
+grab.feed_mainpage_info(main_url=MAIN_URL,additional_unwanted=["twitter.com","/topic/","/author/","/clips/"],)
+searchable_content = grab.create_searchable_content()
 
-list_of_dicts = grab.para_list
-
-merged_dict = {}
-for d in list_of_dicts:
-    url = d["art_url"]
-    paragraphs = d["paras"]
-    if url in merged_dict:
-        merged_dict[url].extend(paragraphs)
-    else:
-        merged_dict[url] = paragraphs
-
-
-ct_ = 0
-while ct_ < 10:
-    for url, paragraphs in merged_dict.items():
-        ct_ += 1
-        print(f"URL: {url}, Merged Paragraphs: {paragraphs}")

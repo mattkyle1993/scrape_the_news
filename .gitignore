@@ -8,4 +8,5 @@ testing.py
 sdfsd.py
 *.png
 *.jpg
+*.json
 screen_cap_read.py
