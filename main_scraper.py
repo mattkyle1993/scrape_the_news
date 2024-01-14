@@ -638,29 +638,30 @@ class GrabArticlesAndArticleContent():
                                 h = a_element.get("href")  # Get the href attribute from the <a> element
                                 # ct = 0
                                 if h is not None:
-                                    if h not in temp_h_list:
-                                        temp_h_list.append(h)
-                                        ct+=1
-                                        if(h.startswith("https://")==False):
-                                            if MAIN_URL[-1] == '/':
-                                                h = MAIN_URL[:-1]+h
-                                            if MAIN_URL[-1] != '/':
-                                                h = MAIN_URL + h
-                                            prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
-                                            if prediction[0] == 1:
-                                                inner_href_set.add(h)
-                                                skip = True
-                                            if prediction[0] == 0:
-                                                skip = True
-                                        if skip == False:
-                                            if(h.startswith("https://")==True):  
+                                    if "#disqus_thread" not in h:
+                                        if h not in temp_h_list:
+                                            temp_h_list.append(h)
+                                            ct+=1
+                                            if(h.startswith("https://")==False):
+                                                if MAIN_URL[-1] == '/':
+                                                    h = MAIN_URL[:-1]+h
+                                                if MAIN_URL[-1] != '/':
+                                                    h = MAIN_URL + h
                                                 prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
                                                 if prediction[0] == 1:
                                                     inner_href_set.add(h)
-                                                    skip = False
+                                                    skip = True
                                                 if prediction[0] == 0:
-                                                    skip = False
-                                        skip = False
+                                                    skip = True
+                                            if skip == False:
+                                                if(h.startswith("https://")==True):  
+                                                    prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
+                                                    if prediction[0] == 1:
+                                                        inner_href_set.add(h)
+                                                        skip = False
+                                                    if prediction[0] == 0:
+                                                        skip = False
+                                            skip = False
                     except Exception as error:
                         if "Error 429" in str(error):
                             error_429+=1
@@ -681,6 +682,8 @@ class GrabArticlesAndArticleContent():
                                 break  
                 if True:
                     reject_count = 99999
+        inner_href_links = list(inner_href_set)
+        self.articles_urls = inner_href_links
         if True:
             if reject_threshold > 0:
                 while len(inner_href_links) < reject_threshold:
@@ -693,8 +696,6 @@ class GrabArticlesAndArticleContent():
                 while len(inner_href_links) == 0:
                     print("zero articles grabbed. stopping.")
                     return None
-        inner_href_links = list(inner_href_set)
-        self.articles_urls = inner_href_links
         print("len of self.articles_urls:",len(self.articles_urls))    
 
         file_name = "article_urls_model/model_guesses_output/model_guesses_output"

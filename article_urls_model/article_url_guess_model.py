@@ -115,6 +115,7 @@ class ArticleURLGuesserModel():
         non_alphabetic_counts = []
         url_len = []
         is_article = []
+        number_of_alpha = []
 
         if len(urls_list) == 0:
             urls_list = []
@@ -160,6 +161,11 @@ class ArticleURLGuesserModel():
                     url_len.append(len(url))
                 except:
                     url_len.append(0)
+                try:
+                    alpha_ct = len([ele for ele in url if ele.isalpha()])
+                    number_of_alpha.append(alpha_ct)
+                except:
+                    number_of_alpha.append(0)
         # Create a DataFrame
         if model_guess == True:
             df = pd.DataFrame({
@@ -169,7 +175,8 @@ class ArticleURLGuesserModel():
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
                 "Non-Alphabetic Count": non_alphabetic_counts,
-                "url_len":url_len
+                "url_len":url_len,
+                "alpha_ct":number_of_alpha
             })
         if model_guess == False:
             df = pd.DataFrame({
@@ -181,7 +188,8 @@ class ArticleURLGuesserModel():
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
                 "Non-Alphabetic Count": non_alphabetic_counts,
-                "url_len":url_len
+                "url_len":url_len,
+                "alpha_ct":number_of_alpha
             })
         if save_csv == True:
             df.to_csv("article_urls_model/test_url_parts_count.csv")
@@ -228,6 +236,6 @@ class ArticleURLGuesserModel():
 
         return prediction
     
-GUESS = ArticleURLGuesserModel()
-GUESS.prepare_url_data_for_model(save_csv=False)
-GUESS.article_guesser_model_builder(new_joblib=False)
+# GUESS = ArticleURLGuesserModel()
+# GUESS.prepare_url_data_for_model(save_csv=True)
+# GUESS.article_guesser_model_builder(new_joblib=True)
