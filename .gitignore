@@ -6,7 +6,14 @@ shape_predictor_68_face_landmarks.dat
 *.html
 testing.py
 sdfsd.py
+looking.py
+photo_metadata.py
 *.png
 *.jpg
 *.json
+*.joblib
+*.txt
+*.csv
 screen_cap_read.py
+/meta_photos/
+testing_grounds.py

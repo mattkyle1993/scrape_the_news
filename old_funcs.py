@@ -121,3 +121,107 @@
     #             attr_dict[attr_name] = attr_value
     #         attributes.append((element_name, attr_dict))
     #     return attributes
+
+    # def navigate_articles_list_webpage(self,article_list_webpage,request_sleep_time=2):
+
+    #     """
+    #     scrolls page and clicks "load more". will modify this later so it can be agnostic to the website.
+    #     want to also add functionality to search if it's a load more button, a next page button, or neither.
+    #     """
+    #     navigate_list = ["load_more_button","next_page_button"]
+    #     for i in navigate_list:
+    #         if i == "load_more_button":
+    #             driver = get_selenium_driver(minimize=False)
+    #             try:
+    #                 driver.get(article_list_webpage)
+    #                 driver.implicitly_wait(request_sleep_time)
+    #             except Exception as error:
+    #                 print("errorR:: ",error)
+    #             elements = driver.find_elements(By.CSS_SELECTOR,"a")
+    #             driver.implicitly_wait(request_sleep_time)
+    #             # ct = 0
+    #             # while ct <= 5:
+    #             #     driver.execute_script("arguments[0].scrollIntoView();",driver.find_element(By.XPATH,".//descendant::div[@class='item load-more']/a"))
+    #             #     WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, ".//descendant::div[@class='item load-more']/a"))).click()
+    #             #     time.sleep(2)
+    #             #     ct+= 1
+
+                                # unwanted = ["sign-in","sign-up","/contact/","/terms/","/privacy/","liveblog","/writers/","/tag/","/podcasts/",'/entertainment/','/navigational-sitemap/',
+                                #             'the-media/', '/economy/', '/europe/', '/border/', '/middle-east/', '/africa/','/asia/', '/latin-america/', '/world-news/','/politics/' ,
+                                #             '/video/', '/tech/', '/sports/', '/on-the-hill-exclusive-video/','/newsletters/', '/people/', '/masthead/', '/accessibility-statement/', 
+                                #             '/policy-information/', '/terms-of-use/', '/privacy-policy/', '/mediakit/', '/contact-us/', '/jobs/', '/careers/','/app/', '/send-a-tip/',
+                                #             '/about/','/jewish-times/', '/israel-inside/', '/tech-israel/', '/real-estate-israel/', '/the-daily-edition/', '/tech-israel-signup/',
+                                #             '/real-estate-israel-signup/','/the-weekend-edition/','/the-blogs-edition/','/local/','/advertise/','/jobs-at-the-times-of-israel/',
+                                #             "twitter.com","/topic/","/author/","/clips/"] 
+                                # unwanted = unwanted + self.additional_unwanted
+                                # print("before:",unwanted)
+                                # add_back = []
+                                # menu_topics = self.mainmenu_news_topic
+                                # skip_this_one = False
+                                # for h in href_link:
+                                    # # print("href link here:",h)
+                                    # for want in menu_topics:
+                                    #     if want in h:
+                                    #         if f"/{want}/" in unwanted:
+                                    #             while f"/{want}/" in unwanted:
+                                    #                 unwanted.remove(f"/{want}/")
+                                    #         if f"/{want}/" not in add_back:
+                                    #             add_back.append(f"/{want}/")
+                                    #         try:
+                                    #             if (h.endswith(f"/{want}/")
+                                    #                 and(h.endswith(MAIN_URL))):
+                                    #                 skip_this_one = True
+                                    #         except:
+                                    #             pass
+                                    # if skip_this_one == False:
+                                        # print("after skip_this_one==False:",h)
+                                    # if(h == h.startswith("https://")):   
+                                    #     if(GUESS.run_article_guesser_model(url_list=[h] == 1)):
+                                    #         print("model predicted it's an article:",h)
+                                    #             # build_up_more_url_data.append(h + ",1")
+                                    # # and(h.count("/") >=3)
+                                    # # # and(h.count("-") >=6) # here is where I would replace with is_article_or_not
+                                    # # # and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                                    # # and(h != theurl)
+                                    # # # amd(h != the_url)
+                                    # # and(clipped_url == REGEX.extract_domain_name(h))
+                                    #         if(clipped_url == REGEX.extract_domain_name(h)):
+                                    #     # and(h.strip() != MAIN_URL.strip())
+                                    #     # and(h not in inner_href_links)
+                                    #     # and(h not in ult_url_list)
+                                    #     # and(h not in url_list)):
+                                    #     #             # print("h here:",h)
+                                    #     #     # for content in self.article_headline_content_type:
+                                    #             if h not in inner_href_links:
+                                    #                 # print("complete:",h)
+                                    # #                 print(h)
+                                    # #                 inner_href_links.append(h)
+                                    #     # catching 'incomplete' links without https:// in them
+                                    #     if(h != h.startswith("https://")):
+                                    #         if MAIN_URL[-1] == '/':
+                                    #             h = MAIN_URL[:-1]+h
+                                    #         if MAIN_URL[-1] != '/':
+                                    #             h = MAIN_URL + h
+                                    #     if(h == h.startswith("https://")):   
+                                    #         if(GUESS.run_article_guesser_model(url_list=[h] == 1)):
+                                    #             if(clipped_url == REGEX.extract_domain_name(h)):
+                                    #                 if h not in inner_href_links:
+                                    #                     inner_href_links.append(h)
+                                                        # print("incomplete:",full_url)
+                                            # if((h.count("/") >=3)
+                                            # # and(h.count("-") >=6)
+                                            # # and((REGEX.unwanted_from_links(href=h,unwanted=unwanted)==True))
+                                            # # and(h.strip() != the_url.strip())
+                                            # and(h.strip() != theurl.strip())
+                                            # and(h not in inner_href_links)
+                                            # and(h not in ult_url_list)
+                                            # and(full_url not in inner_href_links)
+                                            # and(h not in url_list)): 
+                                            #     # for content in self.article_headline_content_type:
+                                            #         # if content in h:
+                                                # if full_url not in inner_href_links:
+                                                #     inner_href_links.append(full_url)
+                                                #     # print("incomplete:",full_url)
+                                                #     print(full_url)
+                                    # skip_this_one = False    
+                                    # unwanted = unwanted + add_back
