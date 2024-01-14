@@ -17,6 +17,8 @@ import random
 import requests
 from bs4 import BeautifulSoup
 import joblib
+from sklearn.datasets import make_hastie_10_2
+from sklearn.ensemble import GradientBoostingClassifier
 
 class ArticleURLGuesserModel():
 
@@ -24,7 +26,7 @@ class ArticleURLGuesserModel():
         self.new_joblib = new_joblib
         pass
 
-    def article_guesser_model_builder(self,max_depth=20,new_joblib=False,save_csv=False):
+    def article_guesser_model_builder(self,max_depth=10,new_joblib=False,save_csv=False):
         data = pd.read_csv("article_urls_model/test_url_parts_count.csv")
 
         X = data.drop(['URL', 'is_article','Unnamed: 0'], axis=1)
@@ -32,8 +34,10 @@ class ArticleURLGuesserModel():
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42,)
 
-        model = DecisionTreeClassifier(max_depth=max_depth)
-        model.fit(X_train, y_train)
+        model = GradientBoostingClassifier(n_estimators=250, learning_rate=1, max_depth=5, random_state=0).fit(X_train, y_train)
+
+        # model = DecisionTreeClassifier(max_depth=max_depth)
+        # model.fit(X_train, y_train)
 
         y_pred = model.predict(X_test)
 
@@ -109,13 +113,15 @@ class ArticleURLGuesserModel():
         slash_counts = []
         twitter_format_counts = []
         non_alphabetic_counts = []
+        url_len = []
         is_article = []
 
         if len(urls_list) == 0:
             urls_list = []
             with open("article_urls_model/testing_urls_with_dummy.txt","r",encoding="utf-8") as file:
                 for line in file:
-                    urls_list.append(line)
+                    if line not in urls_list:
+                        urls_list.append(line)
         else:
             urls_list = urls_list
         for i in range(len(urls_list)):
@@ -150,6 +156,10 @@ class ArticleURLGuesserModel():
                     non_alphabetic_counts.append(len(re.findall(r"[&%]", url)))
                 except:
                     non_alphabetic_counts.append(0)
+                try:
+                    url_len.append(len(url))
+                except:
+                    url_len.append(0)
         # Create a DataFrame
         if model_guess == True:
             df = pd.DataFrame({
@@ -158,7 +168,8 @@ class ArticleURLGuesserModel():
                 "Hyphen Count": hyphen_counts,
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
-                "Non-Alphabetic Count": non_alphabetic_counts
+                "Non-Alphabetic Count": non_alphabetic_counts,
+                "url_len":url_len
             })
         if model_guess == False:
             df = pd.DataFrame({
@@ -169,7 +180,8 @@ class ArticleURLGuesserModel():
                 "Hyphen Count": hyphen_counts,
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
-                "Non-Alphabetic Count": non_alphabetic_counts
+                "Non-Alphabetic Count": non_alphabetic_counts,
+                "url_len":url_len
             })
         if save_csv == True:
             df.to_csv("article_urls_model/test_url_parts_count.csv")
@@ -216,6 +228,6 @@ class ArticleURLGuesserModel():
 
         return prediction
     
-# GUESS = ArticleURLGuesserModel()
-# GUESS.prepare_url_data_for_model(save_csv=False)
-# GUESS.article_guesser_model_builder(new_joblib=True)
+GUESS = ArticleURLGuesserModel()
+GUESS.prepare_url_data_for_model(save_csv=False)
+GUESS.article_guesser_model_builder(new_joblib=False)

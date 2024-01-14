@@ -646,7 +646,7 @@ class GrabArticlesAndArticleContent():
                                                 h = MAIN_URL[:-1]+h
                                             if MAIN_URL[-1] != '/':
                                                 h = MAIN_URL + h
-                                            prediction = GUESS.run_article_guesser_model(h,save_article_guesses=False,print_results=True,print_only_neg_results=True)
+                                            prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
                                             if prediction[0] == 1:
                                                 inner_href_set.add(h)
                                                 skip = True
@@ -654,7 +654,7 @@ class GrabArticlesAndArticleContent():
                                                 skip = True
                                         if skip == False:
                                             if(h.startswith("https://")==True):  
-                                                prediction = GUESS.run_article_guesser_model(h,save_article_guesses=False,print_results=True,print_only_neg_results=True)
+                                                prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
                                                 if prediction[0] == 1:
                                                     inner_href_set.add(h)
                                                     skip = False
