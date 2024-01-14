@@ -23,10 +23,6 @@ from dateutil import parser
 from bs4 import BeautifulSoup
 from article_urls_model.article_url_guess_model import ArticleURLGuesserModel
 
-WEBDRIVER_PATH = "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"
-
-
-
 def change_vpn_location():
     """
     https://pypi.org/project/piapy/
@@ -50,7 +46,24 @@ def change_vpn_location():
             pass
 
 def run_vpn_and_chromedriver(chromedriver=False):
-    
+    """
+    Start a VPN and ChromeDriver to mask IP address and enable web scraping.
+
+    This function is designed to ensure the privacy and anonymity of web scraping activities by starting a Virtual Private Network (VPN) and optionally ChromeDriver. The VPN helps to mask the IP address, while ChromeDriver is used for web scraping. If ChromeDriver is specified, both the VPN and ChromeDriver processes are initiated.
+
+    Parameters:
+    - chromedriver (bool): If True, start both the VPN and ChromeDriver. If False, only start the VPN. Default is False.
+
+    Usage Example:
+    ```
+    # Start the VPN and ChromeDriver
+    run_vpn_and_chromedriver(chromedriver=True)
+
+    # Start only the VPN without ChromeDriver
+    run_vpn_and_chromedriver(chromedriver=False)
+    ```
+
+    """
     program_directory = [
         "C:\\Program Files\Private Internet Access\pia-client.exe",
         "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"]
@@ -90,6 +103,7 @@ def get_selenium_driver(minimize=True):
     """
     returns webdriver so selenium can be implemented more easily
     """
+    WEBDRIVER_PATH = "C:\\Users\mattk\Desktop\streaming_data_experiment\chromedriver_win32\chromedriver.exe"
     webdriver_path = WEBDRIVER_PATH
     service = Service(executable_path=webdriver_path)
     options = webdriver.ChromeOptions()
@@ -117,6 +131,7 @@ def build_element_xpath(element):
 
 
 class NavigateArticleLisTWebPage():
+
     def __init__(self,GRAB):
         self.navigate_style = "agnostic"
         self.navigate_list = ["pagination_style","load_more_style"] 
@@ -137,7 +152,9 @@ class NavigateArticleLisTWebPage():
             self.navigate_style = GRAB.navigate_style
             
         def load_more_style():
-
+            """
+            if an article requires load_more navigation, this function will scroll down the page, click load more, wait, scroll and click load more, etc. 
+            """
             nav_check = 0
 
             driver = get_selenium_driver(minimize=False)
@@ -198,6 +215,10 @@ class NavigateArticleLisTWebPage():
                 return False
             
         def pagination_style():
+            """
+            navigates a given URL by going page by page
+            ex: url.com/page/1, url.com/page/2, url.com/page/3, etc.
+            """
             error_ = ""
             ct = 1
             wp_ct = 0
@@ -234,6 +255,9 @@ class NavigateArticleLisTWebPage():
                         pass
 
         def figure_out_nav_style():
+            """
+            figure out whether a URL requires load_more navigation or pagination navigation
+            """
             unchosen = True
             rainge=6
             range_minus = rainge-1
@@ -270,113 +294,63 @@ class NavigateArticleLisTWebPage():
             #do absolutely nothing
             pass
 
-# class ArticleOrNot():
-
-#     def __init__(self,years_within=.25):
-#         self.suggested_for_the_boot = []
-#         self.years_within = years_within
-#         pass
-
-#     def parse_datetime(self,datetime_strs,matches2=False):
-#         max_datetime = None
-#         for datetime_str in datetime_strs:
-#             try:
-#                 parsed_datetime = parser.parse(datetime_str)
-#                 if max_datetime is None or parsed_datetime > max_datetime:
-#                     max_datetime = parsed_datetime
-#             except ValueError:
-#                 pass  # Invalid datetime format, continue to the next string
-#         if max_datetime:
-#             current_date = datetime.now()
-#             three_years = timedelta(days=365*self.years_within)
-#             time_difference = current_date - max_datetime
-#             if time_difference <= three_years:
-#                 return True, max_datetime
-#             else:
-#                 print("The maximum datetime is more than 3 years from the current date.")
-#                 return False, max_datetime
-#         else:
-#             print("No valid datetime found in the strings.")
-#             return False, max_datetime
-        
-#     def article_or_not(self,the_url="https://www.timesofisrael.com"):
-#         """
-#         Determine whether a given URL is an article or not. if it's determined not to be an article, it appends the url to the 'TestArticleOrNot.suggested_for_the_boot' list.
-#         The 'TestArticleOrNot.suggested_for_the_boot' tuple list can be retreived and then used to pick out url chunks (e.g., "/authors/", "/careers/","/podcasts/"). 
-#         Then, that list can be used to fine tune the scraper so it grabs less and less junk/irrelevant URLS. I.e., add the results to the unwanted list
-#         """
-#         def last_bit_of_url():
-#             match = re.search(r'/([^/]+)/?$', the_url)
-#             if match:
-#                 last_part = match.group(1)
-#                 self.suggested_for_the_boot.append((the_url,last_part,"article suggested for booting. last_bit_of_url diagnosis: success"))
-#             else:
-#                 last_part = "FUNC_FAILED"
-#                 self.suggested_for_the_boot.append((the_url,last_part,"article suggested for booting. last_bit_of_url diagnosis: fail"))
-#                 pass
-#         # begin function    
-#         ult_ct = 1
-#         while ult_ct <=2:
-#             driver = get_selenium_driver()
-#             try:
-#                 driver.get(the_url)
-#             except Exception as error:
-#                 print("error1:",error)
-#             driver.implicitly_wait(2)
-#             html_page_source = driver.page_source
-#             try_again = False
-#             if try_again == True:
-#                 soup = BeautifulSoup(html_page_source, 'html.parser')
-#                 html_page_source = str(soup.header) # get body of page
-#             # print(html_page_source)
-#             pattern1 = r'(?:>\w+(?:\.|\s)\d{1,2}, \d{4}<)|(\d{1,2} [A-Za-z]+ \d{4}, \d{1,2}:\d{2} (am|pm)|Today, \d{1,2}:\d{2} (am|pm)|\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
-#             pattern2 = r'\d{1,2} [A-Za-z]+ \d{4}'
-#             try:
-#                 matches1 = re.findall(pattern1, html_page_source)
-#             except Exception as error:
-#                 print("error2:",error)
-#             skip = False
-#             matches1 = []
-#             matches2 = []
-#             if matches1:
-#                 # print(matches1)
-#                 answer, match = self.parse_datetime(datetime_strs=matches1,matches2=False)
-#                 if answer == True:
-#                     datetime_str = match
-#                     # print(f"Datetime found (Pattern 1): {datetime_str}")
-#                     skip = True
-#                     return True
-#                 if answer == False:
-#                         ult_ct+=1
-#             if skip == False:
-#                 matches2 = re.findall(pattern2, html_page_source)
-#                 if matches2:
-#                     # print(matches2)
-#                     answer, match = self.parse_datetime(datetime_strs=matches2,matches2=True)
-#                     if answer == True:
-#                         datetime_str = match
-#                         # print(f"Datetime found (Pattern 2): {datetime_str}")
-#                         return True
-#                     if answer == False:
-#                         ult_ct+=1
-#             ult_list = matches1 + matches2
-#             if(len(ult_list)==0): 
-#                 try_again = True           
-#                 print("trying again with further-parsed-html")
-#                 skip = False
-#                 if ult_ct == 2:
-#                     last_bit_of_url()
-#                     return False
-#                 else:
-#                     ult_ct+=1
-
 class GrabArticlesAndArticleContent():
-    def __init__(self,main_url,article_headline_content_type=[],mainmenu_news_topic=[],sleep_seconds=2,reject_rate=0.0,navigate_style="agnostic",additional_unwanted=[]):
+    """
+    A versatile class for extracting, processing, and analyzing articles from a main news site.
+
+    The GrabArticlesAndArticleContent class is designed to handle various tasks related to web scraping and content analysis. It offers a range of functionalities, including:
+    
+    - Extraction of menu href links from a main news site's header.
+    - Predicting whether an href link is an article or not.
+    - Scraping paragraphs and headlines from article URLs using both Selenium and/or urllib.
+    - Creation of searchable content by storing scraped data in a JSON file.
+    - Searching through the content for specific keywords and counting their occurrences.
+    - Calculating the frequency of unique words in the article content.
+    
+    This class can be customized with parameters such as the main URL, article content types, sleep intervals, rejection rates, navigation styles, and additional unwanted elements to enhance its scraping capabilities.
+
+    Attributes:
+    - main_url (str): The main URL of the news site to be scraped.
+    - article_headline_content_type (list): A list of keywords representing the types of article content to target.
+    - mainmenu_news_topic (list): A list of topics/categories to exclude from menu links.
+    - reject_rate (float): The rejection rate for filtering out non-article URLs.
+    - sleep_seconds (int): The time interval (in seconds) to pause between HTTP requests.
+    - additional_unwanted (list): A list of additional unwanted elements to filter out during scraping.
+    - navigate_style (str): The navigation style to use during scraping (e.g., "agnostic").
+    - batch_size (int): Number of article urls to grab from (for theurl in url_list:)
+
+
+    Methods:
+    - grab_menu_url_links: Extract menu href links from the header of an HTML page.
+    - alternative_grab_paragraphs_headlines: Scrape paragraphs and headlines from a URL using Selenium or urllib.
+    - create_searchable_content: Create searchable content from scraped articles and store it in a JSON file.
+    - search_through_content: Search through the content of articles for specific keywords and count their occurrences.
+    - count_all_words_in_article_content: Calculate the frequency of each unique word in the article content.
+    - feed_mainpage_info: Extract and process articles from different menu topics on the main news site.
+
+    Usage Example:
+    ```
+    # Instantiate the class with desired parameters
+    grabber = GrabArticlesAndArticleContent(main_url='https://example.com', article_headline_content_type=['politics', 'economy'])
+
+    # Extract and process articles from the main news site
+    grabber.feed_mainpage_info()
+
+    # Create searchable content and store it in a JSON file
+    grabber.create_searchable_content()
+
+    # Search through the content for specific keywords
+    grabber.search_through_content()
+    ```
+
+    """
+    def __init__(self,main_url,article_headline_content_type=[],url_batch_size=10,mainmenu_news_topic=[],sleep_seconds=2,reject_rate=0.0,navigate_style="agnostic",additional_unwanted=[]):
 
         self.main_url = main_url
         self.article_headline_content_type = article_headline_content_type
         self.mainmenu_news_topic = mainmenu_news_topic
         self.reject_rate = reject_rate
+        self.url_batch_size = url_batch_size
 
         self.reject_urls = []
         self.articles_urls = []
@@ -402,9 +376,23 @@ class GrabArticlesAndArticleContent():
         self.clipped_url = ""
         self.headline_grabapproach = ""
 
+    def determine_menu_name(self,):
+        """
+        uses fuzzy wuzzy/ NLP (spaCy) to determine if a menu name is present in a URL, then returns True if it is a URL to be grabbed
+        """
     def grab_menu_url_links(self,the_url):
         """
-        grab menu hrefs from header of html page, filter out unwanted urls
+        Extract menu href links from the header of an HTML page and filter out unwanted URLs.
+
+        This function takes a URL as input, makes an HTTP request to the URL, and extracts href links from the header of the HTML page.
+        It filters out unwanted links based on specific criteria, such as excluding sign-in or sign-up URLs, ensuring the link is within
+        the same domain, and removing duplicates.
+
+        Parameters:
+        - the_url (str): The URL of the web page to extract menu href links from.
+
+        Returns:
+        - href_links (list): A list of filtered and unique href links extracted from the page's header.
         """
         REGEX = RegexFunctions()
         request = urllib.request.Request(the_url,headers=self.headers)  
@@ -427,12 +415,27 @@ class GrabArticlesAndArticleContent():
                 and(h not in href_links)): 
                     # print('reached')
                     # print(self.mainmenu_news_topic)
-                    # if REGEX.unwanted_from_links(href=h,unwanted=self.mainmenu_news_topic) == False:
+                    # if REGEX.unwanted_in_links(href=h,unwanted=self.mainmenu_news_topic) == False:
                     href_links.append(h)
                     # break
         return href_links
 
     def alternative_grab_paragraphs_headlines(self,url,selenium=False,urllib=True,):
+        """
+        Scrape paragraphs and headlines from a given URL using Selenium or urllib.
+
+        This function scrapes paragraphs and a headline from a specified URL using one of two methods: Selenium or urllib.
+        If the Selenium option is chosen, a web driver is used to navigate the page and extract content. If the urllib option
+        is chosen, the function makes an HTTP request to the URL and parses the HTML content.
+
+        Parameters:
+        - url (str): The URL of the web page to scrape.
+        - selenium (bool): If True, use Selenium for scraping. If False, use urllib. Default is False.
+        - urllib (bool): If True, use urllib for scraping. If False, use Selenium. Default is True.
+
+        Returns:
+        - p_dict (dict): A dictionary containing the scraped data, including the article URL, paragraphs, and headline.
+        """
         p_dict = {}
         import urllib.request
         if selenium == True:
@@ -489,6 +492,15 @@ class GrabArticlesAndArticleContent():
         return p_dict
 
     def create_searchable_content(self,):
+
+        """
+        Create searchable content from scraped articles and store it in a JSON file.
+
+        This function takes a list of scraped articles, extracts their URLs, paragraphs, and headlines, 
+        and organizes them into a structured dictionary. The dictionary is then saved in a JSON file 
+        with a timestamp in the filename for future reference. Additionally, the function initializes 
+        important metadata such as the main URL, article content types, and scrape date and time.
+        """
         done = []
         parag_art = self.para_list
         merged_dict = {}
@@ -523,9 +535,17 @@ class GrabArticlesAndArticleContent():
         with open(file_name, 'w') as fp:
             json.dump(merged_dict, fp)
         self.search_content_json_file_name = file_name
-        self.merged_dict = merged_dict
 
-    def search_through_content(self): # ,**keywordsearch
+    def search_through_content(self): 
+
+        """
+            Search through the content of articles for specific keywords and count their occurrences.
+
+            This function performs a search through the content of articles specified by their URLs.
+            It extracts the article content, headline, and URL information from a JSON file and searches for keywords.
+            The keyword counts are then stored in a JSON file with a timestamp in the filename.
+
+        """
         REGEX = RegexFunctions()
         current_datetime = datetime.now()
         custom_format = "%Y_%m_%d_%H_%M_%S"
@@ -543,8 +563,6 @@ class GrabArticlesAndArticleContent():
             else:
                 try:
                     dict_id = f"dict_id_{clipped_url}_0{i}"
-                    # print(self.merged_dict)
-                    # loop_dict = self.merged_dict[dict_id]
                     paragraphs = loop_dict[dict_id]['article_content']
                     headline = loop_dict[dict_id]['headline']
                     url = loop_dict[dict_id]["url"]
@@ -558,11 +576,9 @@ class GrabArticlesAndArticleContent():
                     for keyword in keywords:
                         topic_count[dict_id][f"{keyword}_ct"]=0
                     for paragraph in paragraphs:
-                        # print("paragraph:",paragraph)
                         paragraph = paragraph.lower()
                         for keyword in keywords:
                             top_ct = paragraph.count(keyword.lower())
-                            # print(top_ct)
                             topic_count[dict_id][f"{keyword}_ct"]+=top_ct
                 except Exception as error:
                     print("search_through_content error here:",error)
@@ -570,6 +586,13 @@ class GrabArticlesAndArticleContent():
             json.dump(topic_count, fp)
 
     def count_all_words_in_article_content(self,):
+        """
+            Calculate the frequency of each unique word in the article content.
+
+            This function takes a list of content paragraphs, where each paragraph can be either a string or a list of strings.
+            It processes this nested content, flattens it into a single list of words, and then counts the occurrences of each word
+            using a defaultdict. The resulting word_counts dictionary provides a count of how many times each word appears in the article content.
+        """
         from collections import defaultdict
         word_counts = defaultdict(int)
         nested_content_list = self.all_paragraphs
@@ -589,25 +612,23 @@ class GrabArticlesAndArticleContent():
             for word in words:
                 word_counts[word]+=1
 
-    def feed_mainpage_info(self,):    
+    def feed_mainpage_info(self,):
+        """
+        Extract and process articles from different menu topics on the main news site.
 
-        """     
-        main_url: takes main newsite url (ex: "https://www.cnn.com"), finds header, grabs different news sections, then grabs articles within those news sections, and then grabs the content within those articles.
-        additional_unwanted: takes unwanted str values that you don't want in the article URLs list
-        reject_rate: how many articles are rejected before the while loop for grabbing articles 'gives up'
+        This function takes a main news site URL and proceeds to extract articles from various menu topics
+        such as politics, foreign policy, and more. It employs a machine learning model trained on article and non-article URL data to determine whether
+        a URL is an article or not. Once relevant article URLs are identified, the
+        function scrapes each article's headline and content for further analysis.
         """
         REGEX = RegexFunctions()
         GRAB = GrabArticlesAndArticleContent(main_url=self.main_url,article_headline_content_type=self.article_headline_content_type,mainmenu_news_topic=self.mainmenu_news_topic)
         self.clipped_url = REGEX.extract_domain_name(self.main_url)
-        NAVIGATE = NavigateArticleLisTWebPage(GRAB=GRAB)
-
+        # NAVIGATE = NavigateArticleLisTWebPage(GRAB=GRAB)
         url_list = []
         url_list = GRAB.grab_menu_url_links(the_url=self.main_url)
-        ult_url_list = url_list
         print("the url list:",url_list)
         GUESS = ArticleURLGuesserModel()
-        # url_list = url_list[0:3]
-        # print("trimmed url list:",url_list)
         inner_href_links = []
         inner_href_set = set(inner_href_links)
         reject_count = 0
@@ -618,97 +639,98 @@ class GrabArticlesAndArticleContent():
         skip = False
         temp_h_list = []
         while(reject_count <= reject_threshold):
-                for theurl in url_list:
-                    try:    
-                        # print("theurl",theurl)
-                        # NAVIGATE.navigate_articles_list_webpage(article_list_webpage=theurl)
-                        # for the_url in NAVIGATE.web_pages:
-                        clipped_url = REGEX.extract_domain_name(theurl)
-                        request = urllib.request.Request(theurl,headers=self.headers)  
-                        opener = urllib.request.build_opener()
-                        time.sleep(self.sleep_seconds)
-                        filtered_html = etree.HTML(opener.open(request).read())
-                        # texts = filtered_html.xpath('//body') # search body of page for article links
-                        # for text in texts:
-                        divs = filtered_html.xpath('//div')
-                        for d in divs:
-                            a_elements = d.xpath(".//a")  # Find all <a> elements within the <div>
-                            ct = 0
-                            for a_element in a_elements:
-                                h = a_element.get("href")  # Get the href attribute from the <a> element
-                                # ct = 0
-                                if h is not None:
-                                    if "#disqus_thread" not in h:
-                                        if h not in temp_h_list:
-                                            temp_h_list.append(h)
-                                            ct+=1
-                                            if(h.startswith("https://")==False):
-                                                if MAIN_URL[-1] == '/':
-                                                    h = MAIN_URL[:-1]+h
-                                                if MAIN_URL[-1] != '/':
-                                                    h = MAIN_URL + h
-                                                prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
-                                                if prediction[0] == 1:
-                                                    inner_href_set.add(h)
+            for theurl in url_list:
+                try:    
+                    # once navigation is fixed, I can include that step here:
+                    # print("theurl",theurl)
+                    # NAVIGATE.navigate_articles_list_webpage(article_list_webpage=theurl)
+                    # for the_url in NAVIGATE.web_pages:
+                    request = urllib.request.Request(theurl,headers=self.headers)  
+                    opener = urllib.request.build_opener()
+                    time.sleep(self.sleep_seconds)
+                    filtered_html = etree.HTML(opener.open(request).read())
+                    divs = filtered_html.xpath('//div')
+                    h_count = 0  # Counter to limit the number of "h" elements added
+                    for d in divs:
+                        # print(d)
+                        a_elements = d.xpath(".//a")  # Find all <a> elements within the <div>
+                        for a_element in a_elements:
+                            h = a_element.get("href")  # Get the href attribute from the <a> element
+                            if h is not None:
+                                if "#disqus_thread" not in h: # take out unwanted string  
+                                    if h not in temp_h_list:
+                                        if h_count >=self.url_batch_size:  
+                                            break
+                                        temp_h_list.append(h)
+                                        if(h.startswith("https://")==False):
+                                            if MAIN_URL[-1] == '/':
+                                                h = MAIN_URL[:-1]+h
+                                            if MAIN_URL[-1] != '/':
+                                                h = MAIN_URL + h
+                                            prediction = GUESS.run_article_guesser_model(h,save_article_guesses=False,print_results=False,main_url=MAIN_URL) # run model and predict if URL is an article
+                                            if prediction[0] == 1:
+                                                if h_count < 10:
+                                                    h_count += 1
                                                     skip = True
+                                                    inner_href_set.add(h)
                                                 if prediction[0] == 0:
                                                     skip = True
-                                            if skip == False:
-                                                if(h.startswith("https://")==True):  
-                                                    prediction = GUESS.run_article_guesser_model(h,save_article_guesses=True,)
-                                                    if prediction[0] == 1:
-                                                        inner_href_set.add(h)
+                                        if skip == False:
+                                            if(h.startswith("https://")==True):  
+                                                prediction = GUESS.run_article_guesser_model(h,save_article_guesses=False,print_results=False,main_url=MAIN_URL) # run model and predict if URL is an article
+                                                if prediction[0] == 1:
+                                                    if h_count < 10:
+                                                        h_count += 1
                                                         skip = False
+                                                        inner_href_set.add(h)
                                                     if prediction[0] == 0:
                                                         skip = False
-                                            skip = False
-                    except Exception as error:
-                        if "Error 429" in str(error):
-                            error_429+=1
-                            # print("error 429: too many requests")
-                            if error_429 <= 3:
-                                print("Error 429: too many requests. Current error 429 ct:{error_429}. Sleeping for {sleep_seconds}".format(error_429=error_429,sleep_seconds=self.sleep_seconds*2))
-                                time.sleep(self.sleep_seconds*2)
-                            if error_429 > 3:
-                                print("Error 429: too many requests. Current error 429 ct:{error_429}. Sleeping for {sleep_seconds}".format(error_429=error_429,sleep_seconds=self.sleep_seconds*3))
-                                time.sleep(self.sleep_seconds*3)
-                        reject_dict = {"url":theurl,"error":str(error)}
-                        reject_count += 1
-                        self.reject_urls.append(reject_dict)
-                        # print("reject count:",reject_count)
-                        if reject_threshold > 0:
-                            if reject_count > reject_threshold:
-                                print("Reject count ({reject_count}) greater than reject threshold ({reject_threshold})".format(reject_count=reject_count,reject_threshold=reject_threshold))
-                                break  
-                if True:
-                    reject_count = 99999
+                                        skip = False
+                except Exception as error:
+                    # deal with "too many requests" error
+                    if "Error 429" in str(error):
+                        error_429+=1
+                        # if the error 429 persists, tell it to sleep
+                        if error_429 <= 3:
+                            print("Error 429: too many requests. Current error 429 ct:{error_429}. Sleeping for {sleep_seconds}".format(error_429=error_429,sleep_seconds=self.sleep_seconds*2))
+                            time.sleep(self.sleep_seconds*2)
+                        # if it gets worse, sleep even more
+                        if error_429 > 3:
+                            print("Error 429: too many requests. Current error 429 ct:{error_429}. Sleeping for {sleep_seconds}".format(error_429=error_429,sleep_seconds=self.sleep_seconds*3))
+                            time.sleep(self.sleep_seconds*3)
+                    reject_dict = {"url":theurl,"error":str(error)}
+                    reject_count += 1
+                    self.reject_urls.append(reject_dict)
+                    if reject_threshold > 0: # if reject threshhold is greater than 0, consider it
+                        if reject_count > reject_threshold:
+                            print("Reject count ({reject_count}) greater than reject threshold ({reject_threshold})".format(reject_count=reject_count,reject_threshold=reject_threshold))
+                            break  
+                if True: # unsure if this code is necessary
+                    reject_count = 99999 # unsure if this code is necessary
         inner_href_links = list(inner_href_set)
         self.articles_urls = inner_href_links
-        if True:
-            if reject_threshold > 0:
-                while len(inner_href_links) < reject_threshold:
-                    print("fewer article links ({inner_href_links}) than the reject threshold of {reject_threshold}. stopping.".format(inner_href_links=len(inner_href_links),reject_threshold=reject_threshold))
-                    return None
-                while len(inner_href_links) == 0:
-                    print("zero articles grabbed. stopping.")
-                    return None
-            else:
-                while len(inner_href_links) == 0:
-                    print("zero articles grabbed. stopping.")
-                    return None
+        # deal with rejections and the rejection threshold
+        if reject_threshold > 0:
+            while len(inner_href_links) < reject_threshold:
+                print("fewer article links ({inner_href_links}) than the reject threshold of {reject_threshold}. stopping.".format(inner_href_links=len(inner_href_links),reject_threshold=reject_threshold))
+                return None
+            while len(inner_href_links) == 0:
+                print("zero articles grabbed. stopping.")
+                return None
+        else:
+            while len(inner_href_links) == 0:
+                print("zero articles grabbed. stopping.")
+                return None
         print("len of self.articles_urls:",len(self.articles_urls))    
-
-        file_name = "article_urls_model/model_guesses_output/model_guesses_output"
-        parag_art = [] # grab paragraphs and headlines
+        parag_art = [] 
         inner_done = []
-        # print("inner links:",inner_href_links)
+        # loop through inner_href and find article content
         for inner in inner_href_links:
             if True:
                     true = "true"
                     if true == true:
                         if inner not in inner_done:
                             p_dict = GRAB.alternative_grab_paragraphs_headlines(url=inner,selenium=True)# if urllib fails, try selenium
-                            # if p_dict:
                             if p_dict not in parag_art:
                                 parag_art.append(p_dict)
                             selenium_failed = False
@@ -735,7 +757,14 @@ class GrabArticlesAndArticleContent():
         self.para_list = parag_art
 
 class RegexFunctions():
+
+    """
+        some helpful ReGeX functions
+    """
     def extract_domain_name(self,url):
+        """
+        extract the domain name from a URL
+        """
         pattern = r'www\.(.*?)\.com'
         match = re.search(pattern, url)
         if match:
@@ -743,19 +772,26 @@ class RegexFunctions():
             return result
         else:
             return None
-    def unwanted_from_links(self,href,unwanted):
+    def unwanted_in_links(self,href,unwanted):
         """
-        if any number of unwanted terms are found in the href link it will return False.
-        If no unwanted tersm are found in the href link it will return True.
+            if any number of unwanted terms are found in the href link it will return True.
+            If no unwanted tersm are found in the href link it will return False.
         """
-        true_list = []
-        for substring in unwanted:
-            match = re.search(re.escape(substring), href)
+        if unwanted == type(str):
+            match = re.search(re.escape(unwanted), href)
             if match:
-                true_list.append('darn')
-        return(eval("(len(true_list)==0)"))
+                return True
+            else:
+                return False
+        if unwanted == type(list):
+            for substring in unwanted:
+                match = re.search(re.escape(substring), href)
+                if match:
+                    return True
+                else:
+                    return False
 
-from scrape_info import MAIN_URLS,MAIN_MENU_TOPICS,MAIN_KEYWORDS #, 
+from scrape_info import MAIN_URLS,MAIN_MENU_TOPICS,MAIN_KEYWORDS 
 from datetime import datetime
 run_vpn_and_chromedriver() # make sure VPN is running
 

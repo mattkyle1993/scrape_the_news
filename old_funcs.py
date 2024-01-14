@@ -227,3 +227,103 @@
                                                 #     print(full_url)
                                     # skip_this_one = False    
                                     # unwanted = unwanted + add_back
+
+# class ArticleOrNot():
+
+#     def __init__(self,years_within=.25):
+#         self.suggested_for_the_boot = []
+#         self.years_within = years_within
+#         pass
+
+#     def parse_datetime(self,datetime_strs,matches2=False):
+#         max_datetime = None
+#         for datetime_str in datetime_strs:
+#             try:
+#                 parsed_datetime = parser.parse(datetime_str)
+#                 if max_datetime is None or parsed_datetime > max_datetime:
+#                     max_datetime = parsed_datetime
+#             except ValueError:
+#                 pass  # Invalid datetime format, continue to the next string
+#         if max_datetime:
+#             current_date = datetime.now()
+#             three_years = timedelta(days=365*self.years_within)
+#             time_difference = current_date - max_datetime
+#             if time_difference <= three_years:
+#                 return True, max_datetime
+#             else:
+#                 print("The maximum datetime is more than 3 years from the current date.")
+#                 return False, max_datetime
+#         else:
+#             print("No valid datetime found in the strings.")
+#             return False, max_datetime
+        
+#     def article_or_not(self,the_url="https://www.timesofisrael.com"):
+#         """
+#         Determine whether a given URL is an article or not. if it's determined not to be an article, it appends the url to the 'TestArticleOrNot.suggested_for_the_boot' list.
+#         The 'TestArticleOrNot.suggested_for_the_boot' tuple list can be retreived and then used to pick out url chunks (e.g., "/authors/", "/careers/","/podcasts/"). 
+#         Then, that list can be used to fine tune the scraper so it grabs less and less junk/irrelevant URLS. I.e., add the results to the unwanted list
+#         """
+#         def last_bit_of_url():
+#             match = re.search(r'/([^/]+)/?$', the_url)
+#             if match:
+#                 last_part = match.group(1)
+#                 self.suggested_for_the_boot.append((the_url,last_part,"article suggested for booting. last_bit_of_url diagnosis: success"))
+#             else:
+#                 last_part = "FUNC_FAILED"
+#                 self.suggested_for_the_boot.append((the_url,last_part,"article suggested for booting. last_bit_of_url diagnosis: fail"))
+#                 pass
+#         # begin function    
+#         ult_ct = 1
+#         while ult_ct <=2:
+#             driver = get_selenium_driver()
+#             try:
+#                 driver.get(the_url)
+#             except Exception as error:
+#                 print("error1:",error)
+#             driver.implicitly_wait(2)
+#             html_page_source = driver.page_source
+#             try_again = False
+#             if try_again == True:
+#                 soup = BeautifulSoup(html_page_source, 'html.parser')
+#                 html_page_source = str(soup.header) # get body of page
+#             # print(html_page_source)
+#             pattern1 = r'(?:>\w+(?:\.|\s)\d{1,2}, \d{4}<)|(\d{1,2} [A-Za-z]+ \d{4}, \d{1,2}:\d{2} (am|pm)|Today, \d{1,2}:\d{2} (am|pm)|\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+#             pattern2 = r'\d{1,2} [A-Za-z]+ \d{4}'
+#             try:
+#                 matches1 = re.findall(pattern1, html_page_source)
+#             except Exception as error:
+#                 print("error2:",error)
+#             skip = False
+#             matches1 = []
+#             matches2 = []
+#             if matches1:
+#                 # print(matches1)
+#                 answer, match = self.parse_datetime(datetime_strs=matches1,matches2=False)
+#                 if answer == True:
+#                     datetime_str = match
+#                     # print(f"Datetime found (Pattern 1): {datetime_str}")
+#                     skip = True
+#                     return True
+#                 if answer == False:
+#                         ult_ct+=1
+#             if skip == False:
+#                 matches2 = re.findall(pattern2, html_page_source)
+#                 if matches2:
+#                     # print(matches2)
+#                     answer, match = self.parse_datetime(datetime_strs=matches2,matches2=True)
+#                     if answer == True:
+#                         datetime_str = match
+#                         # print(f"Datetime found (Pattern 2): {datetime_str}")
+#                         return True
+#                     if answer == False:
+#                         ult_ct+=1
+#             ult_list = matches1 + matches2
+#             if(len(ult_list)==0): 
+#                 try_again = True           
+#                 print("trying again with further-parsed-html")
+#                 skip = False
+#                 if ult_ct == 2:
+#                     last_bit_of_url()
+#                     return False
+#                 else:
+#                     ult_ct+=1

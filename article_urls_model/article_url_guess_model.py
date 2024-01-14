@@ -26,19 +26,17 @@ class ArticleURLGuesserModel():
         self.new_joblib = new_joblib
         pass
 
-    def article_guesser_model_builder(self,max_depth=10,new_joblib=False,save_csv=False):
+    def article_guesser_model_builder(self,max_depth=5,ran_state=14,test_size=0.15,learning_rate=1,new_joblib=False,n_estimators=250,save_csv=False,model_name="GradientBoosting"):
         data = pd.read_csv("article_urls_model/test_url_parts_count.csv")
 
         X = data.drop(['URL', 'is_article','Unnamed: 0'], axis=1)
         y = data['is_article']
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42,)
-
-        model = GradientBoostingClassifier(n_estimators=250, learning_rate=1, max_depth=5, random_state=0).fit(X_train, y_train)
-
-        # model = DecisionTreeClassifier(max_depth=max_depth)
-        # model.fit(X_train, y_train)
-
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=ran_state,) # random_state = 42
+        if model_name == "GradientBoosting":
+            model = GradientBoostingClassifier(n_estimators=n_estimators, learning_rate=learning_rate, max_depth=max_depth, random_state=ran_state).fit(X_train, y_train)
+        if model_name == "DecisionTree":
+            model = DecisionTreeClassifier(max_depth=max_depth).fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
         accuracy = accuracy_score(y_test, y_pred)
@@ -98,9 +96,9 @@ class ArticleURLGuesserModel():
             # Train and save the model
             model = DecisionTreeClassifier(max_depth=max_depth)
             model.fit(X_train, y_train)
-            joblib.dump(model, 'article_urls_model/joblibs/ALPHA_trained_article_url_guesser_model.joblib')
+            joblib.dump(model, 'article_urls_model/joblibs/ALPHA_trained_{model_name}_article_url_guesser_model.joblib'.format(model_name=model_name))
         
-    def prepare_url_data_for_model(self,urls_list=[],save_csv=False,return_data=False,model_guess=False):
+    def prepare_url_data_for_model(self,main_url="",urls_list=[],save_csv=False,return_data=False,model_guess=False):
 
 
         """
@@ -117,6 +115,8 @@ class ArticleURLGuesserModel():
         url_len = []
         is_article = []
         number_of_alpha = []
+        html_end = []
+        main_url_start = []
 
         if len(urls_list) == 0:
             urls_list = []
@@ -167,42 +167,69 @@ class ArticleURLGuesserModel():
                     number_of_alpha.append(alpha_ct)
                 except:
                     number_of_alpha.append(0)
+                if url.endswith("index.html") == True:
+                    html_end.append(1)
+                else:
+                    html_end.append(0)
+                if True:
+                    if main_url == "":
+                        is_one = False
+                        if url.startswith("https://www.breitbart.com")==True:
+                            is_one = True
+                            main_url_start.append(1)
+                        if url.startswith("https://www.cnn.com")==True:
+                            is_one = True
+                            main_url_start.append(1)
+                        if url.startswith("https://www.timesofisrael.com")==True:
+                            is_one = True
+                            main_url_start.append(1)
+                        if is_one == False:
+                            main_url_start.append(0)
+                    else:
+                        if url.startswith(main_url)==True:
+                            main_url_start.append(1)
+                        else:
+                            main_url_start.append(0)
         # Create a DataFrame
         if model_guess == True:
             df = pd.DataFrame({
                 "Website Format Count": website_format_counts,
-                "Entertainment Section Count": section_counts,
+                "Section Count": section_counts,
                 "Hyphen Count": hyphen_counts,
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
                 "Non-Alphabetic Count": non_alphabetic_counts,
                 "url_len":url_len,
-                "alpha_ct":number_of_alpha
+                "alpha_ct":number_of_alpha,
+                "html_ending":html_end,
+                "begins_main_url":main_url_start
             })
         if model_guess == False:
             df = pd.DataFrame({
                 "URL": urls_list,
                 "is_article":is_article,
                 "Website Format Count": website_format_counts,
-                "Entertainment Section Count": section_counts,
+                "Section Count": section_counts,
                 "Hyphen Count": hyphen_counts,
                 "Slash Count": slash_counts,
                 "Twitter Count": twitter_format_counts,
                 "Non-Alphabetic Count": non_alphabetic_counts,
                 "url_len":url_len,
-                "alpha_ct":number_of_alpha
+                "alpha_ct":number_of_alpha,
+                "html_ending":html_end,
+                "begins_main_url":main_url_start
             })
         if save_csv == True:
             df.to_csv("article_urls_model/test_url_parts_count.csv")
         if return_data == True:
             return df
 
-    def run_article_guesser_model(self,url,save_article_guesses=False,print_results=False,print_both_results=False,print_only_neg_results=False):
+    def run_article_guesser_model(self,url,main_url,save_article_guesses=False,print_results=False,print_both_results=False,print_only_neg_results=False,model_name="GradientBoosting"):
         """
         takes a given URL and predicts if it's an article or not, then returns the answer: 1 or 0.
         """
-        model = joblib.load('article_urls_model/joblibs/ALPHA_trained_article_url_guesser_model.joblib')
-        new_features = self.prepare_url_data_for_model(urls_list=[url],return_data=True,model_guess=True)
+        model = joblib.load('article_urls_model/joblibs/ALPHA_trained_{model_name}_article_url_guesser_model.joblib'.format(model_name=model_name))
+        new_features = self.prepare_url_data_for_model(urls_list=[url],return_data=True,model_guess=True,main_url=main_url)
         try:
             prediction = model.predict(new_features)
         except Exception as error:
@@ -215,9 +242,9 @@ class ArticleURLGuesserModel():
                     text_to_append = f"{url}\n"
                 file.write(text_to_append)
         if print_results==True:
-            if prediction == 1:
+            if prediction[0] == 1:
                 pred = "Guess: is an article"
-            if prediction == 0:
+            if prediction[0] == 0:
                 pred = "Guess: is not an article"
             if True:
                 if print_only_neg_results == True:
@@ -232,11 +259,9 @@ class ArticleURLGuesserModel():
                 else:
                     if prediction == 1:
                         print("article-guess-model prediction:",(url,pred))
-
-        
-
         return prediction
     
+
 # GUESS = ArticleURLGuesserModel()
 # GUESS.prepare_url_data_for_model(save_csv=True)
 # GUESS.article_guesser_model_builder(new_joblib=True)
