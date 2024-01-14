@@ -85,6 +85,7 @@ class ArticleURLGuesserModel():
 
         # timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
+
         output_filename = f'article_urls_model/model_output_important_features/important_features_{timestamp}.csv'
         important_features_df = pd.DataFrame(important_features, columns=['Feature', 'Importance'])
         if save_csv == True:
